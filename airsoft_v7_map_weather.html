@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Exo+2:wght@300;400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{--bg:#0a0d0f;--surf:#0f1518;--surf2:#141c20;--surf3:#1a252b;--bord:#1e3040;--bord2:#254050;--acc:#00d4ff;--acc2:#00ff88;--acc3:#ff6b35;--warn:#ffb700;--tx:#c8dde8;--tx2:#7a9ab0;--tx3:#4a6878;--mono:'Share Tech Mono',monospace;--ui:'Rajdhani',sans-serif;--body:'Exo 2',sans-serif;--nav-h:60px;--hdr-h:52px;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--tx);font-family:var(--body);display:flex;flex-direction:column;}
+.hdr{height:var(--hdr-h);background:var(--surf);border-bottom:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;z-index:50;}
+.hdr-logo{display:flex;align-items:center;gap:10px;}
+.hdr-hex{width:28px;height:28px;background:linear-gradient(135deg,var(--acc),var(--acc2));clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);}
+.hdr-title{font-family:var(--ui);font-weight:700;font-size:14px;letter-spacing:1.5px;color:var(--acc);}
+.hdr-sub{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;}
+.hdr-st{font-family:var(--mono);font-size:10px;color:var(--tx3);display:flex;align-items:center;gap:6px;}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--acc2);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h)+8px);}
+.bot-nav{height:var(--nav-h);background:var(--surf);border-top:1px solid var(--bord);display:flex;position:fixed;bottom:0;left:0;right:0;z-index:100;}
+.bot-nav button{flex:1;background:none;border:none;color:var(--tx3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--ui);font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:color .2s;border-top:2px solid transparent;padding-top:4px;}
+.bot-nav button.active{color:var(--acc);border-top-color:var(--acc);}
+.bot-nav button i{font-size:19px;}
+.page{display:none;padding:12px;}
+.page.active{display:block;}
+.page-map{display:none;padding:0;}
+.page-map.active{display:flex;flex-direction:column;height:calc(100% - var(--hdr-h) - var(--nav-h));}
+.card{background:var(--surf);border:1px solid var(--bord);border-radius:8px;overflow:hidden;margin-bottom:12px;}
+.card-hdr{background:var(--surf2);border-bottom:1px solid var(--bord);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:var(--ui);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--acc);}
+.card-tag{font-family:var(--mono);font-size:9px;color:var(--tx3);background:var(--surf3);padding:2px 7px;border:1px solid var(--bord);border-radius:2px;}
+.card-body{padding:14px;}
+.flabel{font-family:var(--mono);font-size:10px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:4px;}
+.fgroup{margin-bottom:14px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fselect{width:100%;background:var(--surf2);border:1px solid var(--bord);color:var(--tx);font-family:var(--mono);font-size:13px;padding:9px 12px;border-radius:4px;outline:none;-webkit-appearance:none;height:38px;}
+.fselect:focus{border-color:var(--acc);}
+.fselect option{background:var(--surf);}
+.num-wrap{display:flex;align-items:center;}
+.stp{background:var(--surf3);border:1px solid var(--bord);color:var(--tx2);font-size:18px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:all .15s;}
+.stp:hover{background:var(--bord);color:var(--acc);}
+.stp:active{background:var(--acc);color:#000;}
+.stp.l{border-radius:4px 0 0 4px;border-right:none;}
+.stp.r{border-radius:0 4px 4px 0;border-left:none;}
+.nfield{background:var(--surf2);border:1px solid var(--bord);color:var(--tx);font-family:var(--mono);font-size:13px;height:38px;text-align:center;outline:none;-moz-appearance:textfield;flex:1;min-width:0;transition:border-color .2s;}
+.nfield::-webkit-outer-spin-button,.nfield::-webkit-inner-spin-button{-webkit-appearance:none;}
+.nfield:focus{border-color:var(--acc);background:var(--surf3);}
+.nfield.hi{border-color:var(--acc2);animation:fg .6s ease;}
+@keyframes fg{0%{background:rgba(0,255,136,.2);}100%{background:var(--surf2);}}
+.nunit{font-family:var(--mono);font-size:10px;color:var(--tx3);background:var(--surf3);border:1px solid var(--bord);border-left:none;height:38px;padding:0 9px;display:flex;align-items:center;border-radius:0 4px 4px 0;flex-shrink:0;}
+.hop-bar{height:5px;background:var(--bord);border-radius:3px;margin-top:6px;overflow:hidden;}
+.hop-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .3s;}
+.hop-lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:2px;}
+.divider{height:1px;background:var(--bord);margin:12px 0;}
+.btn{background:none;border:1px solid var(--acc);color:var(--acc);font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:11px 16px;cursor:pointer;border-radius:4px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;}
+.btn:hover{background:rgba(0,212,255,.1);}
+.btn.g{border-color:var(--acc2);color:var(--acc2);}
+.btn.g:hover{background:rgba(0,255,136,.1);}
+.btn.sm{padding:7px 14px;font-size:11px;width:auto;}
+.btn.warn{border-color:var(--acc3);color:var(--acc3);}
+.ibtn{background:none;border:1px solid var(--bord2);color:var(--tx3);font-family:var(--mono);font-size:10px;width:18px;height:18px;border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.ibtn:hover{border-color:var(--acc);color:var(--acc);}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.mcard{background:var(--surf2);border:1px solid var(--bord);padding:12px;border-radius:6px;position:relative;overflow:hidden;cursor:pointer;}
+.mcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent);}
+.mlbl{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);margin-bottom:5px;}
+.mval{font-family:var(--ui);font-weight:700;font-size:20px;color:var(--acc);line-height:1;}
+.munit{font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:2px;}
+.corr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.corr-blk{background:var(--surf2);border:1px solid var(--bord);border-radius:6px;padding:12px;text-align:center;cursor:pointer;}
+.corr-lbl{font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:4px;}
+.corr-big{font-family:var(--ui);font-weight:700;font-size:26px;color:var(--acc2);}
+.corr-unit{font-family:var(--mono);font-size:9px;color:var(--tx3);}
+.corr-small{font-family:var(--mono);font-size:13px;color:var(--acc);margin-top:4px;}
+.traj-canvas{width:100%;height:160px;background:var(--surf3);border:1px solid var(--bord);border-radius:4px;}
+.chart-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.chart-lbl{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;}
+.corr-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+.corr-table th{background:var(--surf3);border:1px solid var(--bord);padding:5px 6px;color:var(--tx3);font-size:9px;text-align:center;cursor:pointer;white-space:nowrap;}
+.corr-table th:hover{color:var(--acc);}
+.corr-table td{border:1px solid var(--bord);padding:5px 6px;text-align:center;color:var(--tx2);}
+.corr-table tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+.corr-table td.d{color:var(--acc);font-weight:700;}
+.corr-table td.dr{color:var(--acc3);}
+.corr-table td.wc{color:var(--warn);}
+.wx-bar{background:var(--surf2);border:1px solid var(--bord2);border-radius:6px;padding:10px 12px;margin-bottom:12px;}
+.wx-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.wx-info{font-family:var(--mono);font-size:11px;color:var(--tx3);flex:1;}
+.wx-info strong{color:var(--acc2);}
+.wx-loc{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:5px;padding-top:5px;border-top:1px solid var(--bord);display:none;align-items:center;justify-content:space-between;}
+.wx-loc.vis{display:flex;}
+.loc-txt{color:var(--tx2);}
+.loc-badge{font-size:9px;padding:2px 6px;border-radius:2px;border:1px solid var(--bord);color:var(--tx3);}
+.loc-badge.gps{border-color:var(--acc2);color:var(--acc2);}
+.loc-badge.man{border-color:var(--warn);color:var(--warn);}
+.bar-btns{display:flex;gap:6px;flex-shrink:0;}
+.bar-btn{background:none;border:1px solid var(--bord2);color:var(--tx2);font-family:var(--mono);font-size:10px;padding:5px 10px;cursor:pointer;border-radius:3px;transition:all .2s;white-space:nowrap;}
+.bar-btn:hover{border-color:var(--acc);color:var(--acc);}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--surf);border:1px solid var(--acc);border-radius:12px 12px 0 0;width:100%;max-height:78vh;overflow-y:auto;}
+.modal-hdr{background:var(--surf2);border-bottom:1px solid var(--bord);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;}
+.modal-title{font-family:var(--ui);font-weight:700;font-size:14px;letter-spacing:1px;color:var(--acc);}
+.modal-close{background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;line-height:1;}
+.modal-body{padding:18px;}
+.modal-body p{font-size:14px;color:var(--tx2);line-height:1.75;margin-bottom:12px;}
+.modal-body strong{color:var(--tx);}
+.tip-action{background:var(--surf3);border-left:3px solid var(--acc2);border-radius:0 4px 4px 0;padding:10px 14px;margin-top:14px;font-size:13px;color:var(--acc2);line-height:1.6;}
+.tip-action::before{content:'→ ';}
+.gps-modal .modal{border-color:var(--acc2);}
+.gic{background:var(--surf2);border:1px solid var(--bord);border-radius:4px;padding:9px 11px;}
+.gic-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);margin-bottom:3px;}
+.gic-val{font-family:var(--ui);font-weight:700;font-size:14px;color:var(--tx);}
+.gic-val.ac{color:var(--acc2);}
+.g-divider{height:1px;background:var(--bord);margin:12px 0;}
+.g-sec{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;}
+.minput{width:100%;background:var(--surf2);border:1px solid var(--bord);color:var(--tx);font-family:var(--mono);font-size:13px;padding:8px 10px;border-radius:4px;outline:none;transition:border-color .2s;}
+.minput:focus{border-color:var(--acc2);}
+.city-res{max-height:140px;overflow-y:auto;margin-top:6px;}
+.city-item{background:var(--surf2);border:1px solid var(--bord);border-radius:3px;padding:8px 12px;margin-bottom:4px;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--tx2);transition:all .15s;display:flex;justify-content:space-between;align-items:center;}
+.city-item:hover{border-color:var(--acc2);color:var(--tx);}
+.city-crd{font-size:10px;color:var(--tx3);}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--bord);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:5px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.st{font-family:var(--mono);font-size:11px;padding:8px 12px;border-radius:4px;margin-top:8px;border-left:3px solid var(--acc);background:rgba(0,212,255,.05);color:var(--tx2);display:none;}
+.st.load{border-color:var(--warn);background:rgba(255,183,0,.05);}
+.st.err{border-color:var(--acc3);background:rgba(255,107,53,.05);}
+.st.ok{border-color:var(--acc2);background:rgba(0,255,136,.05);}
+.url-box{display:flex;gap:8px;}
+.url-in{flex:1;background:var(--surf2);border:1px solid var(--bord);color:var(--tx);font-family:var(--mono);font-size:12px;padding:8px 12px;border-radius:4px;outline:none;height:38px;}
+.url-in:focus{border-color:var(--acc);}
+.gun-card{background:var(--surf2);border:1px solid var(--bord);border-radius:6px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.gun-name{font-family:var(--ui);font-weight:700;font-size:14px;color:var(--tx);}
+.gun-specs{font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:2px;}
+.type-bdg{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(0,212,255,.1);color:var(--acc);border:1px solid rgba(0,212,255,.2);}
+.empty{text-align:center;padding:28px;color:var(--tx3);font-family:var(--mono);font-size:12px;}
+.abadge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(0,255,136,.1);color:var(--acc2);border:1px solid rgba(0,255,136,.2);margin-left:6px;display:none;}
+.abadge.vis{display:inline;}
+
+/* ── WEATHER PAGE ── */
+.wx-hero{background:var(--surf2);border:1px solid var(--bord);border-radius:10px;padding:20px;margin-bottom:12px;text-align:center;}
+.wx-icon{font-size:52px;margin-bottom:8px;line-height:1;}
+.wx-temp-big{font-family:var(--ui);font-weight:700;font-size:52px;color:var(--tx);line-height:1;}
+.wx-temp-unit{font-family:var(--mono);font-size:18px;color:var(--tx3);}
+.wx-desc{font-family:var(--mono);font-size:11px;color:var(--tx2);margin-top:6px;letter-spacing:1px;text-transform:uppercase;}
+.wx-city{font-family:var(--ui);font-weight:500;font-size:16px;color:var(--acc2);margin-top:4px;}
+.wx-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.wx-stat{background:var(--surf2);border:1px solid var(--bord);border-radius:6px;padding:12px;text-align:center;}
+.wx-stat-icon{font-size:20px;color:var(--acc);margin-bottom:4px;}
+.wx-stat-val{font-family:var(--ui);font-weight:700;font-size:18px;color:var(--tx);line-height:1;}
+.wx-stat-lbl{font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:3px;text-transform:uppercase;letter-spacing:1px;}
+.wx-wind-card{background:var(--surf2);border:1px solid var(--bord);border-radius:8px;padding:14px;margin-bottom:12px;}
+.wx-wind-title{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.wx-wind-row{display:flex;align-items:center;gap:14px;}
+.wx-compass-small{width:70px;height:70px;border:2px solid var(--bord2);border-radius:50%;position:relative;background:var(--surf3);flex-shrink:0;}
+.wx-compass-needle{position:absolute;top:50%;left:50%;width:3px;height:26px;transform-origin:bottom center;transform:translate(-50%,-100%);border-radius:2px 2px 0 0;background:linear-gradient(to top,var(--acc3),rgba(255,107,53,.3));transition:transform .5s;}
+.wx-compass-dot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:var(--tx);}
+.wx-compass-n{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--acc3);}
+.wx-wind-info{flex:1;}
+.wx-wind-val{font-family:var(--ui);font-weight:700;font-size:28px;color:var(--acc);line-height:1;}
+.wx-wind-unit{font-family:var(--mono);font-size:11px;color:var(--tx3);}
+.wx-wind-dir{font-family:var(--ui);font-weight:700;font-size:20px;color:var(--acc2);margin-top:4px;}
+.wx-wind-beaufort{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:2px;}
+.wx-hourly{background:var(--surf2);border:1px solid var(--bord);border-radius:8px;padding:12px;margin-bottom:12px;}
+.wx-hourly-title{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+.wx-hourly-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+.wx-hourly-scroll::-webkit-scrollbar{height:3px;}
+.wx-hourly-scroll::-webkit-scrollbar-thumb{background:var(--bord2);border-radius:2px;}
+.wx-hour{background:var(--surf3);border:1px solid var(--bord);border-radius:6px;padding:8px 10px;text-align:center;flex-shrink:0;min-width:58px;}
+.wx-hour.now{border-color:var(--acc);background:rgba(0,212,255,.08);}
+.wx-hour-time{font-family:var(--mono);font-size:9px;color:var(--tx3);}
+.wx-hour-icon{font-size:18px;margin:4px 0;}
+.wx-hour-temp{font-family:var(--ui);font-weight:700;font-size:14px;color:var(--tx);}
+.wx-hour-wind{font-family:var(--mono);font-size:9px;color:var(--acc2);}
+
+/* ── MAP PAGE ── */
+#map{flex:1;min-height:0;}
+.map-toolbar{background:var(--surf);border-bottom:1px solid var(--bord);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+.map-btn{background:none;border:1px solid var(--bord2);color:var(--tx2);font-family:var(--mono);font-size:10px;padding:5px 12px;cursor:pointer;border-radius:3px;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px;}
+.map-btn:hover{border-color:var(--acc);color:var(--acc);}
+.map-btn.active{border-color:var(--acc2);color:var(--acc2);}
+.map-btn.warn-btn{border-color:var(--acc3);color:var(--acc3);}
+.map-dist{background:var(--surf2);border:1px solid var(--acc);border-radius:4px;padding:5px 12px;font-family:var(--mono);font-size:11px;color:var(--acc);display:none;margin-left:auto;}
+.map-dist.vis{display:block;}
+.map-dist strong{color:var(--acc2);font-size:13px;}
+.map-saved{background:var(--surf);border-top:1px solid var(--bord);padding:8px 12px;flex-shrink:0;max-height:130px;overflow-y:auto;}
+.map-saved-title{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.saved-point-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bord);}
+.saved-point-row:last-child{border-bottom:none;}
+.sp-icon{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.sp-name{font-family:var(--mono);font-size:11px;color:var(--tx2);flex:1;}
+.sp-coords{font-family:var(--mono);font-size:9px;color:var(--tx3);}
+.sp-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:13px;padding:0 4px;}
+.sp-del:hover{color:var(--acc3);}
+.leaflet-container{background:#1a252b!important;}
+.leaflet-control-zoom a{background:var(--surf)!important;color:var(--acc)!important;border-color:var(--bord)!important;}
+.leaflet-control-zoom a:hover{background:var(--surf2)!important;}
+.leaflet-popup-content-wrapper{background:var(--surf)!important;border:1px solid var(--acc)!important;border-radius:6px!important;color:var(--tx)!important;}
+.leaflet-popup-tip{background:var(--surf)!important;}
+.leaflet-popup-content{font-family:var(--mono);font-size:11px;color:var(--tx2);margin:8px 12px!important;}
+.cmp-page{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.cmp-wrap{position:relative;width:220px;height:220px;flex-shrink:0;}
+.cmp-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--bord2);background:radial-gradient(circle,var(--surf3) 60%,var(--surf2) 100%);}
+.cmp-tick{position:absolute;inset:16px;border-radius:50%;border:1px dashed var(--bord);}
+.cmp-lbl{position:absolute;font-family:var(--ui);font-weight:700;font-size:13px;color:var(--tx3);}
+.cmp-lbl.N{top:5px;left:50%;transform:translateX(-50%);color:var(--acc3);}
+.cmp-lbl.S{bottom:5px;left:50%;transform:translateX(-50%);}
+.cmp-lbl.E{right:7px;top:50%;transform:translateY(-50%);}
+.cmp-lbl.W{left:7px;top:50%;transform:translateY(-50%);}
+.cmp-nn{position:absolute;top:50%;left:50%;width:4px;height:86px;transform-origin:bottom center;transform:translate(-50%,-100%);border-radius:3px 3px 0 0;background:linear-gradient(to top,var(--acc3),rgba(255,107,53,.3));transition:transform .3s ease;}
+.cmp-ns{position:absolute;top:50%;left:50%;width:4px;height:52px;transform-origin:top center;transform:translate(-50%,0%);border-radius:0 0 3px 3px;background:linear-gradient(to bottom,var(--acc2),rgba(0,255,136,.3));transition:transform .3s ease;}
+.cmp-dot{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:var(--tx);border:2px solid var(--surf);}
+.cmp-badge{background:var(--surf2);border:1px solid var(--acc);border-radius:4px;padding:5px 16px;font-family:var(--mono);font-size:18px;color:var(--acc);text-align:center;}
+.cmp-dir-big{font-family:var(--ui);font-weight:700;font-size:24px;color:var(--acc2);text-align:center;}
+.cmp-st{font-family:var(--mono);font-size:10px;color:var(--tx3);text-align:center;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surf2);border:1px solid var(--bord);border-radius:6px;padding:12px 14px;}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.tsl{position:absolute;inset:0;background:var(--surf3);border:1px solid var(--bord);border-radius:12px;transition:.3s;}
+.tsl::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:var(--tx3);border-radius:50%;transition:.3s;}
+.toggle input:checked+.tsl{background:rgba(0,255,136,.2);border-color:var(--acc2);}
+.toggle input:checked+.tsl::before{transform:translateX(20px);background:var(--acc2);}
+@media(min-width:700px){
+  html,body{height:auto;overflow:auto;}
+  .scroll{overflow:visible;padding-bottom:0;}
+  .bot-nav{position:static;display:none;}
+  .desk-nav{display:flex!important;}
+  .page{display:none;padding:20px;}
+  .page.active{display:block;}
+  .page-map{display:none;padding:0;}
+  .page-map.active{display:flex;flex-direction:column;height:calc(100vh - var(--hdr-h) - 44px);}
+  .desk-layout{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:320px 1fr;gap:16px;}
+  .overlay{align-items:center;}
+  .modal{border-radius:8px;max-width:460px;max-height:82vh;}
+}
+.desk-nav{display:none;gap:2px;background:var(--surf);border-bottom:1px solid var(--bord);padding:0 20px;overflow-x:auto;}
+.desk-nav button{background:none;border:none;color:var(--tx3);font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:11px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.desk-nav button.active{color:var(--acc);border-bottom-color:var(--acc);}
+</style>
+</head>
+<body>
+
+<!-- TIP MODAL -->
+<div class="overlay" id="tipOv" onclick="if(event.target===this)closeTip()">
+  <div class="modal"><div class="modal-hdr"><span class="modal-title" id="tipT">INFO</span><button class="modal-close" onclick="closeTip()">✕</button></div><div class="modal-body" id="tipB"></div></div>
+</div>
+
+<!-- GPS MODAL -->
+<div class="overlay gps-modal" id="gpsOv" onclick="if(event.target===this)closeGps()">
+  <div class="modal">
+    <div class="modal-hdr" style="border-color:var(--bord);"><span class="modal-title" style="color:var(--acc2);">◎ Poloha — zdroj počasia</span><button class="modal-close" onclick="closeGps()">✕</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div class="gic"><div class="gic-lbl">Zdroj</div><div class="gic-val ac" id="gSrc">—</div></div>
+        <div class="gic"><div class="gic-lbl">Miesto</div><div class="gic-val" id="gCity">—</div></div>
+        <div class="gic"><div class="gic-lbl">Lat</div><div class="gic-val" id="gLat">—</div></div>
+        <div class="gic"><div class="gic-lbl">Lon</div><div class="gic-val" id="gLon">—</div></div>
+        <div class="gic"><div class="gic-lbl">Teplota</div><div class="gic-val ac" id="gTemp">—</div></div>
+        <div class="gic"><div class="gic-lbl">Vietor</div><div class="gic-val ac" id="gWind">—</div></div>
+      </div>
+      <div class="g-divider"></div>
+      <div class="g-sec">GPS automaticky</div>
+      <button class="btn g" style="margin-bottom:12px;" onclick="gpsAutoLoad()"><i class="ti ti-current-location"></i> Použiť moju polohu</button>
+      <div id="gpsAutoSt" class="st"></div>
+      <div class="g-divider"></div>
+      <div class="g-sec">Hľadať mesto</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <input class="minput" type="text" id="cityIn" placeholder="napr. Banská Bystrica..." oninput="debCity()" style="flex:1;">
+        <button class="btn sm" onclick="searchCity()">Hľadať</button>
+      </div>
+      <div id="cityRes" class="city-res"></div>
+      <div class="g-divider"></div>
+      <div class="g-sec">Súradnice manuálne</div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;"><div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:3px;">LAT</div><input class="minput" type="number" id="mLat" placeholder="48.7395" step="0.0001"></div>
+        <div style="flex:1;"><div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:3px;">LON</div><input class="minput" type="number" id="mLon" placeholder="19.1530" step="0.0001"></div>
+        <button class="btn sm" style="align-self:flex-end;" onclick="applyManual()">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-hex"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8L8 2L14 8L8 14Z" stroke="white" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="2" fill="white"/></svg></div>
+    <div><div class="hdr-title">AIRSOFT BALLISTICS</div><div class="hdr-sub">TACTICAL v7.0</div></div>
+  </div>
+  <div class="hdr-st"><div class="dot"></div><span id="hdrSt">ONLINE</span></div>
+</div>
+
+<nav class="desk-nav" id="deskNav">
+  <button class="active" onclick="showPage('calc',this)"><i class="ti ti-crosshair"></i> Kalkulátor</button>
+  <button onclick="showPage('weather',this)"><i class="ti ti-cloud"></i> Počasie</button>
+  <button onclick="showPage('map',this)"><i class="ti ti-map"></i> Mapa</button>
+  <button onclick="showPage('compass',this)"><i class="ti ti-compass"></i> Kompas</button>
+  <button onclick="showPage('import',this)"><i class="ti ti-download"></i> Import</button>
+  <button onclick="showPage('db',this)"><i class="ti ti-database"></i> Databáza</button>
+</nav>
+
+<div class="scroll" id="mainScroll">
+
+<!-- CALC -->
+<div id="page-calc" class="page active">
+<div class="desk-layout">
+<div>
+  <div class="wx-bar">
+    <div class="wx-top">
+      <div class="wx-info" id="wxInfo">☁ Počasie nenačítané</div>
+      <div class="bar-btns">
+        <button class="bar-btn" onclick="quickWx()"><i class="ti ti-refresh"></i> GPS</button>
+        <button class="bar-btn" onclick="openGps()"><i class="ti ti-map-pin"></i> Poloha</button>
+      </div>
+    </div>
+    <div class="wx-loc" id="wxLoc">
+      <span class="loc-txt" id="locTxt">—</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--acc);" id="locCoords">—</span>
+        <span class="loc-badge" id="locBdg">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Parametre zbrane</span><span class="card-tag">WEAPON</span></div>
+    <div class="card-body">
+      <div class="fgroup">
+        <div class="flabel">Typ zbrane <span class="abadge" id="bdg_type">načítané</span> <button class="ibtn" onclick="showTip('weaponType')">?</button></div>
+        <select class="fselect" id="weaponType" onchange="runCalc()">
+          <option value="aeg">AEG — Electric</option><option value="hpa">HPA — High Pressure Air</option>
+          <option value="gbb">GBB — Gas Blowback</option><option value="dmr" selected>DMR — Designated Marksman</option>
+          <option value="sniper">Sniper — Bolt Action</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Hmotnosť BB <span class="abadge" id="bdg_bb">načítané</span> <button class="ibtn" onclick="showTip('bbWeight')">?</button></div>
+        <div class="num-wrap"><button class="stp l" onclick="step('bbW',-.01)">−</button><input class="nfield" type="number" id="bbW" value="0.30" min="0.20" max="0.50" step="0.01" oninput="fpsToJ()"><span class="nunit">g</span></div>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <div class="flabel">FPS <span class="abadge" id="bdg_fps">načítané</span> <button class="ibtn" onclick="showTip('fps')">?</button></div>
+          <div class="num-wrap"><button class="stp l" onclick="step('fps_',-5)">−</button><input class="nfield" type="number" id="fps_" value="420" min="100" max="700" step="1" oninput="fpsToJ()"><span class="nunit">fps</span></div>
+        </div>
+        <div class="fgroup">
+          <div class="flabel">Joule <span class="abadge" id="bdg_joule">načítané</span> <button class="ibtn" onclick="showTip('joule')">?</button></div>
+          <div class="num-wrap"><button class="stp l" onclick="step('joule_',-.05)">−</button><input class="nfield" type="number" id="joule_" value="" placeholder="auto" step="0.05" oninput="jToFps()"><span class="nunit">J</span></div>
+        </div>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Dĺžka hlavne <span class="abadge" id="bdg_barrel">načítané</span> <button class="ibtn" onclick="showTip('barrelLen')">?</button></div>
+        <div class="num-wrap"><button class="stp l" onclick="step('barrel',-10)">−</button><input class="nfield" type="number" id="barrel" value="509" min="100" max="800" step="1" oninput="runCalc()"><span class="nunit">mm</span></div>
+      </div>
+      <div class="divider"></div>
+      <div class="fgroup">
+        <div class="flabel">Hop-Up <button class="ibtn" onclick="showTip('hopUp')">?</button></div>
+        <div class="num-wrap"><button class="stp l" onclick="step('hop_',-5)">−</button><input class="nfield" type="number" id="hop_" value="50" min="0" max="100" step="1" oninput="updateHop()"><button class="stp r" onclick="step('hop_',5)" style="border-left:none;border-right:1px solid var(--bord);">+</button><span class="nunit">%</span></div>
+        <div class="hop-bar"><div class="hop-fill" id="hopFill" style="width:50%"></div></div>
+        <div class="hop-lbl"><span>OFF</span><span>MED</span><span>MAX</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Podmienky & Cieľ</span><span class="card-tag">ENV</span></div>
+    <div class="card-body">
+      <div class="frow">
+        <div class="fgroup">
+          <div class="flabel">Zero <button class="ibtn" onclick="showTip('zeroRange')">?</button></div>
+          <div class="num-wrap"><button class="stp l" onclick="step('zero_',-5)">−</button><input class="nfield" type="number" id="zero_" value="30" min="5" max="100" step="1" oninput="runCalc()"><span class="nunit">m</span></div>
+        </div>
+        <div class="fgroup">
+          <div class="flabel">Cieľ <button class="ibtn" onclick="showTip('targetRange')">?</button></div>
+          <div class="num-wrap"><button class="stp l" onclick="step('target_',-5)">−</button><input class="nfield" type="number" id="target_" value="50" min="5" max="150" step="1" oninput="runCalc()"><span class="nunit">m</span></div>
+        </div>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Rýchlosť vetra <button class="ibtn" onclick="showTip('windSpeed')">?</button></div>
+        <div class="num-wrap"><button class="stp l" onclick="step('wSpd',-.5)">−</button><input class="nfield" type="number" id="wSpd" value="3.0" min="0" max="25" step="0.5" oninput="runCalc()"><span class="nunit">m/s</span></div>
+      </div>
+      <div class="fgroup">
+        <div class="flabel">Smer vetra <button class="ibtn" onclick="showTip('windDir')">?</button></div>
+        <select class="fselect" id="wDir" onchange="runCalc()">
+          <option value="0">N — Sever (0°)</option><option value="45">NE (45°)</option>
+          <option value="90" selected>E — Východ (90°)</option><option value="135">SE (135°)</option>
+          <option value="180">S — Juh (180°)</option><option value="225">SW (225°)</option>
+          <option value="270">W — Západ (270°)</option><option value="315">NW (315°)</option>
+        </select>
+      </div>
+      <div class="frow">
+        <div class="fgroup">
+          <div class="flabel">Teplota <button class="ibtn" onclick="showTip('temp')">?</button></div>
+          <div class="num-wrap"><button class="stp l" onclick="step('temp_',-1)">−</button><input class="nfield" type="number" id="temp_" value="20" min="-20" max="50" step="1" oninput="runCalc()"><span class="nunit">°C</span></div>
+        </div>
+        <div class="fgroup">
+          <div class="flabel">Vlhkosť <button class="ibtn" onclick="showTip('humidity')">?</button></div>
+          <div class="num-wrap"><button class="stp l" onclick="step('humid',-5)">−</button><input class="nfield" type="number" id="humid" value="60" min="0" max="100" step="1" oninput="runCalc()"><span class="nunit">%</span></div>
+        </div>
+      </div>
+      <button class="btn g" onclick="runCalc()"><i class="ti ti-player-play"></i> Vypočítať trajektóriu</button>
+    </div>
+  </div>
+</div>
+<div>
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Výsledky</span><span class="card-tag">OUTPUT</span></div>
+    <div class="card-body">
+      <div class="metrics">
+        <div class="mcard" onclick="showTip('outDrop')"><div class="mlbl">Pokles BB ▸</div><div class="mval" id="outDrop">—</div><div class="munit">centimetrov</div></div>
+        <div class="mcard" onclick="showTip('outDrift')"><div class="mlbl">Wind Drift ▸</div><div class="mval" id="outDrift" style="color:var(--acc3)">—</div><div class="munit">centimetrov</div></div>
+        <div class="mcard" onclick="showTip('outTime')"><div class="mlbl">Čas letu ▸</div><div class="mval" id="outTime">—</div><div class="munit">sekundy</div></div>
+        <div class="mcard" onclick="showTip('outEnergy')"><div class="mlbl">Energia ▸</div><div class="mval" id="outEnergy">—</div><div class="munit">joulov</div></div>
+      </div>
+      <div class="corr-grid">
+        <div class="corr-blk" onclick="showTip('milEl')"><div class="corr-lbl">▼ ELEVATION ▸</div><div class="corr-big" id="outMilEl">—</div><div class="corr-unit">MIL</div><div class="corr-small" id="outMoaEl">—</div><div class="corr-unit">MOA</div></div>
+        <div class="corr-blk" onclick="showTip('milWind')"><div class="corr-lbl">→ WINDAGE ▸</div><div class="corr-big" id="outMilWind" style="color:var(--warn)">—</div><div class="corr-unit">MIL</div><div class="corr-small" id="outMoaWind" style="color:var(--warn)">—</div><div class="corr-unit">MOA</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="chart-hdr"><span class="chart-lbl">Trajektória BB</span><button class="ibtn" onclick="showTip('trajectory')">?</button></div>
+      <canvas class="traj-canvas" id="trajCvs"></canvas>
+      <div class="divider"></div>
+      <div class="chart-hdr"><span class="chart-lbl">Tabuľka korekcií</span><button class="ibtn" onclick="showTip('corrTable')">?</button></div>
+      <div style="overflow-x:auto;">
+        <table class="corr-table"><thead><tr>
+          <th onclick="showTip('col_dist')">DIST▸</th><th onclick="showTip('col_pokles')">POKLES▸</th>
+          <th onclick="showTip('col_drift')">DRIFT▸</th><th onclick="showTip('col_milel')">MIL↓▸</th>
+          <th onclick="showTip('col_moael')">MOA↓▸</th><th onclick="showTip('col_milw')">MIL→▸</th>
+          <th onclick="showTip('col_moaw')">MOA→▸</th><th onclick="showTip('col_energy')">E(J)▸</th>
+        </tr></thead><tbody id="corrBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- WEATHER PAGE -->
+<div id="page-weather" class="page">
+  <div id="wxHeroWrap">
+    <div class="wx-hero">
+      <div class="wx-icon" id="wxHeroIcon">🌤</div>
+      <div><span class="wx-temp-big" id="wxHeroTemp">--</span><span class="wx-temp-unit">°C</span></div>
+      <div class="wx-desc" id="wxHeroDesc">NENAČÍTANÉ</div>
+      <div class="wx-city" id="wxHeroCity">—</div>
+    </div>
+    <div class="wx-stats">
+      <div class="wx-stat"><div class="wx-stat-icon"><i class="ti ti-droplet"></i></div><div class="wx-stat-val" id="wxStatHum">--%</div><div class="wx-stat-lbl">Vlhkosť</div></div>
+      <div class="wx-stat"><div class="wx-stat-icon"><i class="ti ti-eye"></i></div><div class="wx-stat-val" id="wxStatVis">--km</div><div class="wx-stat-lbl">Viditeľnosť</div></div>
+      <div class="wx-stat"><div class="wx-stat-icon"><i class="ti ti-temperature"></i></div><div class="wx-stat-val" id="wxStatFeel">--°C</div><div class="wx-stat-lbl">Pocitová</div></div>
+    </div>
+    <div class="wx-wind-card">
+      <div class="wx-wind-title">VIETOR</div>
+      <div class="wx-wind-row">
+        <div class="wx-compass-small" id="wxCmpWrap">
+          <div class="wx-compass-n">N</div>
+          <div class="wx-compass-needle" id="wxCmpNeedle"></div>
+          <div class="wx-compass-dot"></div>
+        </div>
+        <div class="wx-wind-info">
+          <div><span class="wx-wind-val" id="wxWindVal">--</span> <span class="wx-wind-unit">m/s</span></div>
+          <div class="wx-wind-dir" id="wxWindDir">--</div>
+          <div class="wx-wind-beaufort" id="wxWindBft">--</div>
+        </div>
+      </div>
+    </div>
+    <div class="wx-hourly" id="wxHourlyWrap" style="display:none;">
+      <div class="wx-hourly-title">HODINOVÁ PREDPOVEĎ</div>
+      <div class="wx-hourly-scroll" id="wxHourlyScroll"></div>
+    </div>
+    <button class="btn" id="wxLoadBtn" onclick="loadWeatherPage()"><i class="ti ti-current-location"></i> Načítať počasie z GPS</button>
+    <div class="st" id="wxPageSt" style="margin-top:10px;"></div>
+    <div style="margin-top:10px;">
+      <button class="btn g" id="wxApplyBtn" style="display:none;" onclick="applyWxFromPage()"><i class="ti ti-check"></i> Použiť v kalkulátore</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAP PAGE -->
+<div id="page-map" class="page-map">
+  <div class="map-toolbar">
+    <button class="map-btn" id="btnMapNorm" onclick="setMapLayer('normal')" ><i class="ti ti-map-2"></i> Mapa</button>
+    <button class="map-btn" id="btnMapSat" onclick="setMapLayer('satellite')"><i class="ti ti-satellite"></i> Satelit</button>
+    <button class="map-btn" id="btnMyLoc" onclick="goMyLocation()"><i class="ti ti-current-location"></i> Moja poloha</button>
+    <button class="map-btn" id="btnMeasure" onclick="toggleMeasure()"><i class="ti ti-ruler-measure"></i> Merať</button>
+    <button class="map-btn warn-btn" id="btnClearPts" onclick="clearMapPoints()" style="display:none;"><i class="ti ti-trash"></i> Vymazať</button>
+    <div class="map-dist" id="mapDistBadge">Vzdialenosť: <strong id="mapDistVal">0</strong> m</div>
+  </div>
+  <div id="map"></div>
+  <div class="map-saved" id="mapSavedWrap">
+    <div class="map-saved-title">ULOŽENÉ BODY</div>
+    <div id="savedPointsList"><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Žiadne uložené body. Drž prst (alebo klikni) na mape pre pridanie bodu.</div></div>
+  </div>
+</div>
+
+<!-- COMPASS -->
+<div id="page-compass" class="page">
+  <div class="cmp-page">
+    <div class="cmp-wrap">
+      <div class="cmp-ring"></div><div class="cmp-tick"></div>
+      <div class="cmp-lbl N">N</div><div class="cmp-lbl S">S</div><div class="cmp-lbl E">E</div><div class="cmp-lbl W">W</div>
+      <div class="cmp-nn" id="cmpN"></div><div class="cmp-ns" id="cmpS"></div><div class="cmp-dot"></div>
+    </div>
+    <div style="display:flex;gap:14px;align-items:center;">
+      <div class="cmp-badge" id="cmpH">---°</div>
+      <div><div class="cmp-dir-big" id="cmpD">--</div><div class="cmp-st" id="cmpSt">Načítavam...</div></div>
+    </div>
+    <div style="max-width:300px;width:100%;display:flex;flex-direction:column;gap:10px;">
+      <div class="toggle-row">
+        <div><div style="font-size:13px;color:var(--tx);margin-bottom:2px;">Automatický smer vetra</div><div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Kompas nastavuje smer vetra podľa telefónu</div></div>
+        <label class="toggle"><input type="checkbox" id="autoW" onchange="toggleAutoW()"><span class="tsl"></span></label>
+      </div>
+      <div style="background:var(--surf2);border:1px solid var(--bord);border-radius:6px;padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;"><span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Smer kompasu</span><span style="font-family:var(--ui);font-weight:700;font-size:16px;" id="cmpWD">---°</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Nastavený smer vetra</span><span style="font-family:var(--ui);font-weight:700;font-size:16px;color:var(--acc2);" id="cmpWS">—</span></div>
+      </div>
+      <button class="btn" onclick="applyCompWind()"><i class="ti ti-wind"></i> Nastaviť smer vetra teraz</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT -->
+<div id="page-import" class="page">
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Import zbrane z URL</span><span class="card-tag">PARSER</span></div>
+    <div class="card-body">
+      <p style="font-family:var(--mono);font-size:11px;color:var(--tx2);margin-bottom:10px;">Vložte odkaz — parametre sa načítajú priamo do kalkulátora.</p>
+      <div class="url-box"><input class="url-in" type="url" id="gunUrl" placeholder="https://www.catus-airsoft.eu/..."><button class="btn sm" onclick="parseUrl()"><i class="ti ti-download"></i></button></div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:5px;">catus-airsoft.eu · airsoftpro.sk · gunfire.pl · patrolbase.co.uk</div>
+      <div id="parseSt" class="st"></div>
+      <div id="parsePreview" style="display:none;margin-top:12px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--acc2);letter-spacing:1px;margin-bottom:8px;">NAČÍTANÉ PARAMETRE:</div>
+        <div style="background:var(--surf2);border:1px solid var(--bord);border-radius:6px;padding:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;" id="previewGrid"></div>
+          <button class="btn g" onclick="applyParsed()"><i class="ti ti-check"></i> Použiť v kalkulátore</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DB -->
+<div id="page-db" class="page">
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Uložené zbrane</span><span class="card-tag" id="dbCnt">0</span></div>
+    <div class="card-body">
+      <button class="btn" style="margin-bottom:12px;" onclick="saveGun()"><i class="ti ti-plus"></i> Uložiť aktuálne nastavenie</button>
+      <div id="gunList"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- scroll -->
+
+<nav class="bot-nav">
+  <button class="active" onclick="showPage('calc',this)"><i class="ti ti-crosshair"></i>Kalkulátor</button>
+  <button onclick="showPage('weather',this)"><i class="ti ti-cloud"></i>Počasie</button>
+  <button onclick="showPage('map',this)"><i class="ti ti-map"></i>Mapa</button>
+  <button onclick="showPage('compass',this)"><i class="ti ti-compass"></i>Kompas</button>
+  <button onclick="showPage('import',this)"><i class="ti ti-download"></i>Import</button>
+  <button onclick="showPage('db',this)"><i class="ti ti-database"></i>Databáza</button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+<script>
+'use strict';
+let savedGuns=JSON.parse(localStorage.getItem('airsoftGuns')||'[]');
+let savedPoints=JSON.parse(localStorage.getItem('airsoftMapPoints')||'[]');
+let parsedGun=null,curLoc=null,cityTimer=null,compassH=0,autoWind=false,orientOK=false;
+let leafMap=null,layerNormal=null,layerSat=null,activeLayer='normal';
+let measureMode=false,measureMarkers=[],measureLine=null;
+let wxPageData=null;
+
+/* ── TIPS ── */
+const TIPS={
+  weaponType:{t:'Typ zbrane',b:`<p>Vyber aký typ zbrane máš.</p><p><strong>AEG</strong> — elektrická · <strong>HPA</strong> — vzduch · <strong>GBB</strong> — plyn · <strong>DMR</strong> — semi-auto · <strong>Sniper</strong> — boltka</p><div class="tip-action">Vyber typ a pokračuj.</div>`},
+  bbWeight:{t:'Hmotnosť BB',b:`<p>Pozri na krabičku — 0.20–0.25g ľahké · 0.28–0.32g stredné · 0.36–0.45g ťažké</p><div class="tip-action">Pozri na krabičku a zadaj číslo.</div>`},
+  fps:{t:'FPS — rýchlosť strely',b:`<p>Rýchlosť guličky z hlavne. AEG: 330–380 · DMR: 400–450 · Sniper: 450–550</p><div class="tip-action">Zadaj z chronografu alebo manuálu.</div>`},
+  joule:{t:'Joule',b:`<p>Energia strely. Limity: CQB 1–1.5J · AEG 1.5–2J · DMR 2–3J · Sniper do 3.5J</p><div class="tip-action">Stačí FPS — Joule sa dopočíta.</div>`},
+  barrelLen:{t:'Dĺžka hlavne',b:`<p>Pistol: 90–150mm · AEG: 363–407mm · DMR: 455–509mm · Sniper: 500–650mm</p><div class="tip-action">Pozri do manuálu. Ak nevieš, nechaj prednastavené.</div>`},
+  hopUp:{t:'Hop-Up',b:`<p>Rotácia guličky — vďaka nej letí ďalej a rovnejšie. Nastav fyzicky na zbrani.</p><div class="tip-action">Nastav na zbrani kým nelietí rovno, sem zadaj odhad %.</div>`},
+  zeroRange:{t:'Zero',b:`<p>Vzdialenosť nastavenia optiky.</p><div class="tip-action">Zadaj vzdialenosť. Ak nevieš, daj 30m.</div>`},
+  targetRange:{t:'Cieľ',b:`<p>Ako ďaleko je cieľ.</p><div class="tip-action">Odhadni a zadaj vzdialenosť.</div>`},
+  windSpeed:{t:'Rýchlosť vetra',b:`<p>1–2 bezvetrie · 3–5 vánok · 6–9 citeľný · 10+ silný</p><div class="tip-action">Stlač GPS — načíta sa automaticky.</div>`},
+  windDir:{t:'Smer vetra',b:`<p>Odkiaľ vietor fúka. Použi Kompas tab pre automatické nastavenie.</p><div class="tip-action">GPS alebo Kompas tab.</div>`},
+  temp:{t:'Teplota',b:`<p>Ovplyvňuje hustotu vzduchu a výkon GBB/HPA zbraní.</p><div class="tip-action">GPS — načíta sa automaticky.</div>`},
+  humidity:{t:'Vlhkosť',b:`<p>Minimálny vplyv, ale zahrnutý pre presnosť.</p><div class="tip-action">GPS alebo nechaj 60%.</div>`},
+  outDrop:{t:'Pokles BB',b:`<p>O koľko cm gulička klesne pod miesto mierenia.</p><div class="tip-action">Zamier o toľko cm VYŠŠIE ako cieľ.</div>`},
+  outDrift:{t:'Wind Drift',b:`<p>O koľko cm vietor odnesie guličku do strany.</p><div class="tip-action">Zamier o toľko cm DO VETRA.</div>`},
+  outTime:{t:'Čas letu',b:`<p>Za koľko sekúnd gulička doletí. Pri pohybujúcom sa cieli treba viesť.</p><div class="tip-action">Pri bežiacom cieli mier pred neho.</div>`},
+  outEnergy:{t:'Energia na cieli',b:`<p>Zostatok energie pri dopade. Klesá so vzdialenosťou.</p><div class="tip-action">Skontroluj limity poľa.</div>`},
+  milEl:{t:'MIL/MOA — výška',b:`<p>Korekcia výšky pre optiku s kliknutiami. MIL=10cm/100m · MOA≈3cm/100m</p><div class="tip-action">Otoč elevation kliknutia nahor.</div>`},
+  milWind:{t:'MIL/MOA — vietor',b:`<p>Horizontálna korekcia pre optiku.</p><div class="tip-action">Otoč windage kliknutia do smeru vetra.</div>`},
+  trajectory:{t:'Graf trajektórie',b:`<p>Modrá=dráha · Zelená=zero · Oranžová=cieľ</p><div class="tip-action">Vzdialenosť modrej od oranžovej = pokles.</div>`},
+  corrTable:{t:'Tabuľka korekcií',b:`<p>Pokles, drift a korekcie pre 10–100m.</p><div class="tip-action">Odfot pred hrou.</div>`},
+  col_dist:{t:'DIST',b:`<p>Vzdialenosť v metroch.</p><div class="tip-action">Nájdi riadok pre svoju vzdialenosť.</div>`},
+  col_pokles:{t:'POKLES',b:`<p>Cm poklesu — zamieraj o toľko vyššie.</p><div class="tip-action">Zamier VYŠŠIE.</div>`},
+  col_drift:{t:'DRIFT',b:`<p>Cm odnosu — zamieraj do vetra.</p><div class="tip-action">Zamier DO VETRA.</div>`},
+  col_milel:{t:'MIL↓',b:`<p>Elevation v MIL.</p><div class="tip-action">Použi ak máš MIL optiku.</div>`},
+  col_moael:{t:'MOA↓',b:`<p>Elevation v MOA.</p><div class="tip-action">Použi ak máš MOA optiku.</div>`},
+  col_milw:{t:'MIL→',b:`<p>Windage v MIL.</p><div class="tip-action">Použi ak máš MIL optiku.</div>`},
+  col_moaw:{t:'MOA→',b:`<p>Windage v MOA.</p><div class="tip-action">Použi ak máš MOA optiku.</div>`},
+  col_energy:{t:'E(J)',b:`<p>Energia BB pri dopade.</p><div class="tip-action">Skontroluj limity poľa.</div>`},
+};
+function showTip(k){const t=TIPS[k];if(!t)return;document.getElementById('tipT').textContent=t.t;document.getElementById('tipB').innerHTML=t.b;document.getElementById('tipOv').classList.add('open');}
+function closeTip(){document.getElementById('tipOv').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeTip();closeGps();}});
+
+/* ── NAV ── */
+function showPage(p,btn){
+  document.querySelectorAll('.page,.page-map').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.bot-nav button,.desk-nav button').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById('page-'+p);if(el)el.classList.add('active');
+  if(btn)btn.classList.add('active');
+  document.querySelectorAll('.bot-nav button,.desk-nav button').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+p+"'"))b.classList.add('active');});
+  const scroll=document.getElementById('mainScroll');
+  if(p==='map'){scroll.style.overflow='hidden';initMap();setTimeout(()=>{if(leafMap)leafMap.invalidateSize();},200);}
+  else scroll.style.overflow='';
+  if(p==='db')renderGuns();
+  if(p==='compass')startCompass();
+}
+
+/* ── MAP ── */
+function initMap(){
+  if(leafMap)return;
+  const lat=curLoc?curLoc.lat:48.7395,lon=curLoc?curLoc.lon:19.1530;
+  leafMap=L.map('map',{zoomControl:true,attributionControl:false}).setView([lat,lon],14);
+  layerNormal=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(leafMap);
+  layerSat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+  document.getElementById('btnMapNorm').classList.add('active');
+  /* long press / click for adding points */
+  let pressTimer=null;
+  leafMap.on('mousedown touchstart',e=>{pressTimer=setTimeout(()=>{if(measureMode)addMeasurePoint(e.latlng);else promptSavePoint(e.latlng);},500);});
+  leafMap.on('mouseup touchend',()=>clearTimeout(pressTimer));
+  leafMap.on('click',e=>{if(measureMode)addMeasurePoint(e.latlng);});
+  /* load saved points */
+  savedPoints.forEach(sp=>addSavedMarker(sp));
+  renderSavedPoints();
+}
+
+function setMapLayer(type){
+  if(!leafMap)return;
+  if(type==='normal'){layerSat.remove();layerNormal.addTo(leafMap);document.getElementById('btnMapNorm').classList.add('active');document.getElementById('btnMapSat').classList.remove('active');}
+  else{layerNormal.remove();layerSat.addTo(leafMap);document.getElementById('btnMapSat').classList.add('active');document.getElementById('btnMapNorm').classList.remove('active');}
+  activeLayer=type;
+}
+
+function goMyLocation(){
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const{latitude:lat,longitude:lon}=pos.coords;
+    if(!leafMap)initMap();
+    leafMap.setView([lat,lon],16);
+    L.circleMarker([lat,lon],{radius:8,fillColor:'#00d4ff',color:'#fff',weight:2,fillOpacity:0.9}).addTo(leafMap).bindPopup('<b>Moja poloha</b>').openPopup();
+  },()=>alert('GPS nedostupné'));
+}
+
+function toggleMeasure(){
+  measureMode=!measureMode;
+  const btn=document.getElementById('btnMeasure');
+  btn.classList.toggle('active',measureMode);
+  btn.innerHTML=measureMode?'<i class="ti ti-ruler-measure"></i> Meranie ON':'<i class="ti ti-ruler-measure"></i> Merať';
+  if(!measureMode){clearMeasure();}
+  else{document.getElementById('btnClearPts').style.display='block';}
+}
+
+function addMeasurePoint(latlng){
+  if(measureMarkers.length>=2){clearMeasure();}
+  const colors=['#00ff88','#ff6b35'];
+  const m=L.circleMarker(latlng,{radius:7,fillColor:colors[measureMarkers.length],color:'#fff',weight:2,fillOpacity:1}).addTo(leafMap);
+  const labels=['A','B'];
+  m.bindTooltip(labels[measureMarkers.length],{permanent:true,direction:'top',className:'leaflet-dist-lbl'});
+  measureMarkers.push({marker:m,latlng});
+  if(measureMarkers.length===2){
+    const d=leafMap.distance(measureMarkers[0].latlng,measureMarkers[1].latlng);
+    const dRound=Math.round(d);
+    if(measureLine)measureLine.remove();
+    measureLine=L.polyline([measureMarkers[0].latlng,measureMarkers[1].latlng],{color:'#00d4ff',weight:2,dashArray:'6,4'}).addTo(leafMap);
+    document.getElementById('mapDistVal').textContent=dRound;
+    document.getElementById('mapDistBadge').classList.add('vis');
+    /* offer to use as target range */
+    if(confirm(`Vzdialenosť: ${dRound} m\n\nNastaviť ako vzdialenosť cieľa v kalkulátore?`)){
+      document.getElementById('target_').value=Math.min(150,Math.max(5,dRound));
+      runCalc();
+    }
+  }
+}
+
+function clearMeasure(){
+  measureMarkers.forEach(m=>m.marker.remove());
+  measureMarkers=[];
+  if(measureLine){measureLine.remove();measureLine=null;}
+  document.getElementById('mapDistBadge').classList.remove('vis');
+  document.getElementById('btnClearPts').style.display='none';
+}
+
+function clearMapPoints(){
+  if(measureMode)clearMeasure();
+}
+
+function promptSavePoint(latlng){
+  const name=prompt('Názov bodu (napr. Respawn, Cieľ, Pozícia A):');
+  if(!name)return;
+  const colors=['#00d4ff','#00ff88','#ff6b35','#ffb700','#c084fc'];
+  const sp={id:Date.now(),name,lat:latlng.lat,lon:latlng.lng,color:colors[savedPoints.length%colors.length]};
+  savedPoints.push(sp);
+  localStorage.setItem('airsoftMapPoints',JSON.stringify(savedPoints));
+  addSavedMarker(sp);
+  renderSavedPoints();
+}
+
+const mapMarkerRefs={};
+function addSavedMarker(sp){
+  if(!leafMap)return;
+  const icon=L.divIcon({html:`<div style="width:12px;height:12px;border-radius:50%;background:${sp.color};border:2px solid white;"></div>`,iconSize:[12,12],iconAnchor:[6,6],className:''});
+  const m=L.marker([sp.lat,sp.lon],{icon}).addTo(leafMap).bindPopup(`<b>${sp.name}</b><br>${sp.lat.toFixed(5)}, ${sp.lon.toFixed(5)}`);
+  mapMarkerRefs[sp.id]=m;
+}
+
+function renderSavedPoints(){
+  const el=document.getElementById('savedPointsList');
+  if(!savedPoints.length){el.innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);">Žiadne uložené body. Drž prst na mape pre pridanie.</div>';return;}
+  el.innerHTML=savedPoints.map(sp=>`
+    <div class="saved-point-row">
+      <div class="sp-icon" style="background:${sp.color};"></div>
+      <div class="sp-name">${sp.name}</div>
+      <div class="sp-coords">${sp.lat.toFixed(4)}, ${sp.lon.toFixed(4)}</div>
+      <button class="sp-del" onclick="delSavedPoint(${sp.id})"><i class="ti ti-x"></i></button>
+    </div>`).join('');
+}
+
+function delSavedPoint(id){
+  if(mapMarkerRefs[id]){mapMarkerRefs[id].remove();delete mapMarkerRefs[id];}
+  savedPoints=savedPoints.filter(p=>p.id!==id);
+  localStorage.setItem('airsoftMapPoints',JSON.stringify(savedPoints));
+  renderSavedPoints();
+}
+
+/* ── WEATHER PAGE ── */
+function wxCode(wmo){
+  if(wmo===0)return['☀️','JASNO'];if(wmo<=2)return['🌤','MÁLOOБЛAČNO'];if(wmo<=3)return['☁️','ZAMRAČENÉ'];
+  if(wmo<=48)return['🌫','HMLA'];if(wmo<=55)return['🌦','MRHOLENIE'];if(wmo<=67)return['🌧','DÁŽĎ'];
+  if(wmo<=77)return['❄️','SNEH'];if(wmo<=82)return['🌨','PREHÁNKY'];if(wmo<=99)return['⛈','BÚRKA'];
+  return['🌤','—'];
+}
+function beaufort(ms){if(ms<0.3)return'0 — Bezvetrie';if(ms<1.6)return'1 — Tichý vánok';if(ms<3.4)return'2 — Ľahký vánok';if(ms<5.5)return'3 — Slabý vietor';if(ms<8)return'4 — Mierny vietor';if(ms<10.8)return'5 — Čerstvý vietor';if(ms<13.9)return'6 — Silný vietor';return'7+ — Veľmi silný';}
+
+async function loadWeatherPage(){
+  const btn=document.getElementById('wxLoadBtn'),st=document.getElementById('wxPageSt');
+  btn.innerHTML='<span class="spin"></span>Načítavam GPS...';btn.disabled=true;
+  st.style.display='none';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const{latitude:lat,longitude:lon}=pos.coords;
+      btn.innerHTML='<span class="spin"></span>Načítavam počasie...';
+      const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,weather_code,visibility&hourly=temperature_2m,wind_speed_10m,weather_code&timezone=auto&forecast_days=1`);
+      const d=await r.json();const c=d.current;
+      const city=await revGeo(lat,lon);
+      const windMs=parseFloat((c.wind_speed_10m/3.6).toFixed(1));
+      const wdn=d2wn(c.wind_direction_10m);
+      const[icon,desc]=wxCode(c.weather_code||0);
+      wxPageData={temp:c.temperature_2m,humidity:c.relative_humidity_2m,wind:windMs,windDeg:c.wind_direction_10m,wdn,city};
+      curLoc={lat,lon,city:city||'GPS',source:'gps',...wxPageData};
+      /* update hero */
+      document.getElementById('wxHeroIcon').textContent=icon;
+      document.getElementById('wxHeroTemp').textContent=c.temperature_2m;
+      document.getElementById('wxHeroDesc').textContent=desc;
+      document.getElementById('wxHeroCity').textContent=city||`${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+      document.getElementById('wxStatHum').textContent=c.relative_humidity_2m+'%';
+      document.getElementById('wxStatVis').textContent=c.visibility?Math.round(c.visibility/1000)+'km':'—';
+      document.getElementById('wxStatFeel').textContent=(c.apparent_temperature||c.temperature_2m)+'°C';
+      document.getElementById('wxWindVal').textContent=windMs;
+      document.getElementById('wxWindDir').textContent=wdn+' ('+c.wind_direction_10m+'°)';
+      document.getElementById('wxWindBft').textContent=beaufort(windMs);
+      document.getElementById('wxCmpNeedle').style.transform=`translate(-50%,-100%) rotate(${c.wind_direction_10m}deg)`;
+      /* hourly */
+      if(d.hourly){
+        const now=new Date();const nowH=now.getHours();
+        const hours=d.hourly.time.slice(0,24);
+        const scroll=document.getElementById('wxHourlyScroll');
+        scroll.innerHTML=hours.map((t,i)=>{
+          const h=new Date(t).getHours();const[ic]=wxCode(d.hourly.weather_code[i]||0);
+          const ws=parseFloat((d.hourly.wind_speed_10m[i]/3.6).toFixed(1));
+          return`<div class="wx-hour${h===nowH?' now':''}"><div class="wx-hour-time">${h}:00</div><div class="wx-hour-icon">${ic}</div><div class="wx-hour-temp">${d.hourly.temperature_2m[i]}°</div><div class="wx-hour-wind">${ws}m/s</div></div>`;
+        }).join('');
+        document.getElementById('wxHourlyWrap').style.display='block';
+      }
+      updWxBar();
+      document.getElementById('wxApplyBtn').style.display='flex';
+      btn.innerHTML='<i class="ti ti-refresh"></i> Obnoviť';btn.disabled=false;
+      document.getElementById('hdrSt').textContent=`${c.temperature_2m}°C · ${windMs}m/s`;
+    }catch(e){st.style.display='block';st.className='st err';st.innerHTML='✕ '+e.message;btn.innerHTML='<i class="ti ti-current-location"></i> Načítať z GPS';btn.disabled=false;}
+  },err=>{st.style.display='block';st.className='st err';st.innerHTML='✕ GPS nedostupné';btn.innerHTML='<i class="ti ti-current-location"></i> Načítať z GPS';btn.disabled=false;});
+}
+
+function applyWxFromPage(){
+  if(!wxPageData)return;
+  document.getElementById('temp_').value=wxPageData.temp;
+  document.getElementById('humid').value=wxPageData.humidity;
+  document.getElementById('wSpd').value=wxPageData.wind;
+  const dirs=[0,45,90,135,180,225,270,315];
+  document.getElementById('wDir').value=dirs.reduce((a,b)=>Math.abs(b-wxPageData.windDeg)<Math.abs(a-wxPageData.windDeg)?b:a);
+  runCalc();
+  showPage('calc',null);
+  document.querySelectorAll('.bot-nav button')[0].classList.add('active');
+}
+
+/* ── COMPASS ── */
+function startCompass(){if(typeof DeviceOrientationEvent==='undefined'){setCmpSt('Senzor nie je dostupný');return;}if(typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted')listenOrient();else setCmpSt('Prístup zamietnutý.');}).catch(()=>setCmpSt('Kliknite pre povolenie senzoru.'));}else listenOrient();}
+function listenOrient(){orientOK=true;window.addEventListener('deviceorientationabsolute',handleOrient,true);window.addEventListener('deviceorientation',handleOrient,true);setCmpSt('Senzor aktívny — otoč telefón');}
+function handleOrient(e){let h=0;if(e.webkitCompassHeading!=null)h=e.webkitCompassHeading;else if(e.alpha!=null)h=(360-e.alpha)%360;else return;compassH=Math.round(h);updCmpUI(compassH);if(autoWind)applyCompWindSilent(compassH);}
+function updCmpUI(deg){document.getElementById('cmpN').style.transform=`translate(-50%,-100%) rotate(${deg}deg)`;document.getElementById('cmpS').style.transform=`translate(-50%,0%) rotate(${deg}deg)`;document.getElementById('cmpH').textContent=deg+'°';document.getElementById('cmpD').textContent=d2wn(deg);document.getElementById('cmpWD').textContent=deg+'°';}
+function setCmpSt(m){document.getElementById('cmpSt').textContent=m;}
+function toggleAutoW(){autoWind=document.getElementById('autoW').checked;if(autoWind&&!orientOK)startCompass();}
+function applyCompWind(){applyCompWindSilent(compassH);document.getElementById('cmpWS').textContent=compassH+'° ('+d2wn(compassH)+')';}
+function applyCompWindSilent(deg){const dirs=[0,45,90,135,180,225,270,315];document.getElementById('wDir').value=dirs.reduce((a,b)=>Math.abs(b-deg)<Math.abs(a-deg)?b:a);runCalc();}
+
+/* ── GPS ── */
+function openGps(){updGpsMdl();document.getElementById('gpsOv').classList.add('open');}
+function closeGps(){document.getElementById('gpsOv').classList.remove('open');}
+function updGpsMdl(){if(curLoc){document.getElementById('gSrc').textContent=curLoc.source==='gps'?'GPS zariadenie':curLoc.source==='city'?'Vyhľadané':'Manuálne';document.getElementById('gCity').textContent=curLoc.city||'—';document.getElementById('gLat').textContent=curLoc.lat.toFixed(4);document.getElementById('gLon').textContent=curLoc.lon.toFixed(4);document.getElementById('gTemp').textContent=curLoc.temp+'°C';document.getElementById('gWind').textContent=curLoc.wind+' m/s · '+curLoc.wdn;}}
+function updWxBar(){const bar=document.getElementById('wxInfo'),loc=document.getElementById('wxLoc');if(!curLoc){bar.textContent='☁ Počasie nenačítané';loc.classList.remove('vis');return;}bar.innerHTML=`<strong>☁ ${curLoc.temp}°C · ${curLoc.wind} m/s ${curLoc.wdn}</strong> · ${curLoc.humidity}%`;document.getElementById('locTxt').textContent=curLoc.city||`${curLoc.lat.toFixed(3)}, ${curLoc.lon.toFixed(3)}`;document.getElementById('locCoords').textContent=`${curLoc.lat.toFixed(4)}, ${curLoc.lon.toFixed(4)}`;const b=document.getElementById('locBdg');b.textContent=curLoc.source==='gps'?'GPS':curLoc.source==='city'?'VYHĽADANÉ':'MANUÁLNE';b.className='loc-badge '+(curLoc.source==='gps'?'gps':'man');loc.classList.add('vis');}
+async function fetchWxC(lat,lon){const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m`);const d=await r.json();const c=d.current;return{temp:c.temperature_2m,humidity:c.relative_humidity_2m,wind:parseFloat((c.wind_speed_10m/3.6).toFixed(1)),windDeg:c.wind_direction_10m,wdn:d2wn(c.wind_direction_10m)};}
+async function revGeo(lat,lon){try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=sk`);const d=await r.json();return d.address?.city||d.address?.town||d.address?.village||null;}catch{return null;}}
+function d2wn(d){return['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];}
+function applyWxCalc(w){document.getElementById('temp_').value=w.temp;document.getElementById('humid').value=w.humidity;document.getElementById('wSpd').value=w.wind;const dirs=[0,45,90,135,180,225,270,315];document.getElementById('wDir').value=dirs.reduce((a,b)=>Math.abs(b-w.windDeg)<Math.abs(a-w.windDeg)?b:a);runCalc();}
+async function quickWx(){document.getElementById('wxInfo').innerHTML='<span class="spin"></span>...';navigator.geolocation.getCurrentPosition(async pos=>{try{const{latitude:lat,longitude:lon}=pos.coords;const w=await fetchWxC(lat,lon);const city=await revGeo(lat,lon);curLoc={lat,lon,city:city||'GPS',source:'gps',...w};applyWxCalc(w);updWxBar();}catch{document.getElementById('wxInfo').textContent='☁ Chyba';}},()=>{document.getElementById('wxInfo').textContent='☁ GPS nedostupné';});}
+async function gpsAutoLoad(){const st=document.getElementById('gpsAutoSt');st.style.display='block';st.className='st load';st.innerHTML='<span class="spin"></span>GPS...';navigator.geolocation.getCurrentPosition(async pos=>{try{const{latitude:lat,longitude:lon}=pos.coords;const w=await fetchWxC(lat,lon);const city=await revGeo(lat,lon);curLoc={lat,lon,city:city||'GPS',source:'gps',...w};applyWxCalc(w);updWxBar();updGpsMdl();st.className='st ok';st.innerHTML=`✔ ${city||lat.toFixed(3)+', '+lon.toFixed(3)} · ${w.temp}°C · ${w.wind} m/s`;}catch(e){st.className='st err';st.innerHTML='✕ '+e.message;}},err=>{st.className='st err';st.innerHTML='✕ GPS: '+err.message;});}
+function debCity(){clearTimeout(cityTimer);cityTimer=setTimeout(searchCity,500);}
+async function searchCity(){const q=document.getElementById('cityIn').value.trim();if(q.length<2)return;const res=document.getElementById('cityRes');res.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--tx3);padding:6px;">Hľadám...</div>';try{const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&accept-language=sk`);const data=await r.json();if(!data.length){res.innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);padding:6px;">Žiadne výsledky</div>';return;}res.innerHTML=data.map(p=>`<div class="city-item" onclick="selCity(${p.lat},${p.lon},'${p.display_name.split(',').slice(0,2).join(',').replace(/'/g,"'")}')"><span>${p.display_name.split(',').slice(0,3).join(', ')}</span><span class="city-crd">${parseFloat(p.lat).toFixed(3)},${parseFloat(p.lon).toFixed(3)}</span></div>`).join('');}catch{res.innerHTML='<div style="color:var(--acc3);font-size:10px;padding:6px;">Chyba</div>';}}
+async function selCity(lat,lon,name){const st=document.getElementById('gpsAutoSt');st.style.display='block';st.className='st load';st.innerHTML=`<span class="spin"></span>${name}...`;try{const w=await fetchWxC(lat,lon);curLoc={lat:parseFloat(lat),lon:parseFloat(lon),city:name,source:'city',...w};applyWxCalc(w);updWxBar();updGpsMdl();st.className='st ok';st.innerHTML=`✔ ${name} · ${w.temp}°C · ${w.wind} m/s`;document.getElementById('cityRes').innerHTML='';document.getElementById('cityIn').value='';}catch(e){st.className='st err';st.innerHTML='✕ '+e.message;}}
+async function applyManual(){const lat=parseFloat(document.getElementById('mLat').value),lon=parseFloat(document.getElementById('mLon').value);if(isNaN(lat)||isNaN(lon))return;const st=document.getElementById('gpsAutoSt');st.style.display='block';st.className='st load';st.innerHTML='<span class="spin"></span>Načítavam...';try{const w=await fetchWxC(lat,lon);const city=await revGeo(lat,lon);curLoc={lat,lon,city:city||`${lat.toFixed(3)},${lon.toFixed(3)}`,source:'manual',...w};applyWxCalc(w);updWxBar();updGpsMdl();st.className='st ok';st.innerHTML=`✔ ${curLoc.city} · ${w.temp}°C`;}catch(e){st.className='st err';st.innerHTML='✕ '+e.message;}}
+
+/* ── STEPPER ── */
+function step(id,d){const el=document.getElementById(id);let v=parseFloat(el.value)||0;v+=d;const mn=parseFloat(el.min),mx=parseFloat(el.max);if(!isNaN(mn))v=Math.max(mn,v);if(!isNaN(mx))v=Math.min(mx,v);const s=parseFloat(el.step)||1;el.value=v.toFixed((s.toString().split('.')[1]||'').length);el.dispatchEvent(new Event('input'));}
+function updateHop(){const v=parseFloat(document.getElementById('hop_').value)||0;document.getElementById('hopFill').style.width=Math.min(100,Math.max(0,v))+'%';runCalc();}
+function fpsToJ(){const fps=parseFloat(document.getElementById('fps_').value)||0,bb=parseFloat(document.getElementById('bbW').value)||.3,ms=fps*.3048;document.getElementById('joule_').value=(0.5*bb*.001*ms*ms).toFixed(3);runCalc();}
+function jToFps(){const j=parseFloat(document.getElementById('joule_').value)||0,bb=parseFloat(document.getElementById('bbW').value)||.3;if(j>0&&bb>0)document.getElementById('fps_').value=Math.round(Math.sqrt(2*j/(bb*.001))/.3048);runCalc();}
+
+/* ── PHYSICS ── */
+function rho(t,h){const T=t+273.15,es=6.1078*Math.pow(10,7.5*t/(237.3+t)),pv=h/100*es*100;return(101325-pv)/(287.05*T)+pv/(461.495*T);}
+function ball(dist,fps,bbG,hop,wMs,wDeg,temp,hum,zero){const bb=bbG*.001,v0=fps*.3048,dr=(0.5*0.47*rho(temp,hum)*Math.PI*9e-6)/bb,hf=hop/100*0.0008/bb;let x=0,y=0,vx=v0,vy=0,t=0,zy=0,zr=false;while(x<dist+1&&t<5){const v=Math.sqrt(vx*vx+vy*vy);vx+=(-dr*vx*v)*.001;vy+=(-9.81+hf*v-dr*vy*v)*.001;x+=vx*.001;y+=vy*.001;t+=.001;if(Math.abs(x-zero)<.05&&!zr){zy=y;zr=true;}if(x>=dist-.01)break;}const wr=((wDeg-90)*Math.PI)/180;return{drop:(zy-y)*100,drift:wMs*Math.cos(wr)*t*t*50,time:t,e:0.5*bb*(vx*vx+vy*vy)};}
+const toMil=(cm,d)=>(cm/d)/10,toMoa=m=>m*3.438;
+function runCalc(){const fps=parseFloat(document.getElementById('fps_').value)||420,bb=parseFloat(document.getElementById('bbW').value)||.3,hop=parseFloat(document.getElementById('hop_').value)||50,wMs=parseFloat(document.getElementById('wSpd').value)||0,wDeg=parseFloat(document.getElementById('wDir').value)||90,temp=parseFloat(document.getElementById('temp_').value)||20,hum=parseFloat(document.getElementById('humid').value)||60,zero=parseFloat(document.getElementById('zero_').value)||30,tgt=parseFloat(document.getElementById('target_').value)||50;const r=ball(tgt,fps,bb,hop,wMs,wDeg,temp,hum,zero);document.getElementById('outDrop').textContent=Math.abs(r.drop).toFixed(1);document.getElementById('outDrift').textContent=Math.abs(r.drift).toFixed(1);document.getElementById('outTime').textContent=r.time.toFixed(3);document.getElementById('outEnergy').textContent=r.e.toFixed(3);const mEl=toMil(r.drop,tgt),mW=toMil(r.drift,tgt);document.getElementById('outMilEl').textContent=mEl.toFixed(2);document.getElementById('outMoaEl').textContent=toMoa(mEl).toFixed(1);document.getElementById('outMilWind').textContent=mW.toFixed(2);document.getElementById('outMoaWind').textContent=toMoa(mW).toFixed(1);drawTraj(fps,bb,hop,temp,hum,zero,tgt);buildTable(fps,bb,hop,wMs,wDeg,temp,hum,zero);}
+function drawTraj(fps,bb,hop,temp,hum,zero,tgt){const cv=document.getElementById('trajCvs'),ctx=cv.getContext('2d');cv.width=cv.offsetWidth;cv.height=cv.offsetHeight;ctx.clearRect(0,0,cv.width,cv.height);const pts=[];for(let i=0;i<=80;i++){const d=tgt*1.1*i/80;pts.push({x:d,y:ball(d,fps,bb,hop,0,0,temp,hum,zero).drop});}const minY=Math.min(...pts.map(p=>p.y)),maxY=Math.max(...pts.map(p=>p.y)),ry=maxY-minY||1,px=36,py=14,w=cv.width-px*2,h=cv.height-py*2;ctx.strokeStyle='#1e3040';ctx.lineWidth=0.5;for(let i=0;i<=4;i++){const y=py+h*i/4;ctx.beginPath();ctx.moveTo(px,y);ctx.lineTo(px+w,y);ctx.stroke();ctx.fillStyle='#4a6878';ctx.font='8px Share Tech Mono';ctx.fillText((maxY-ry*i/4).toFixed(0)+'cm',0,y+3);}for(let i=0;i<=4;i++){const x=px+w*i/4;ctx.beginPath();ctx.moveTo(x,py);ctx.lineTo(x,py+h);ctx.stroke();ctx.fillStyle='#4a6878';ctx.font='8px Share Tech Mono';ctx.fillText(Math.round(tgt*1.1*i/4)+'m',x-8,cv.height-2);}ctx.beginPath();pts.forEach((p,i)=>{const x=px+(p.x/(tgt*1.1))*w,y=py+h-((p.y-minY)/ry)*h;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.strokeStyle='#00d4ff';ctx.lineWidth=2;ctx.stroke();const zx=px+(zero/(tgt*1.1))*w;ctx.strokeStyle='#00ff88';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(zx,py);ctx.lineTo(zx,py+h);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#00ff88';ctx.font='8px Share Tech Mono';ctx.fillText('ZERO',zx+2,py+10);const tx2=px+(tgt/(tgt*1.1))*w;ctx.strokeStyle='#ff6b35';ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(tx2,py);ctx.lineTo(tx2,py+h);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ff6b35';ctx.fillText('TARGET',Math.max(px,tx2-42),py+10);}
+function buildTable(fps,bb,hop,wMs,wDeg,temp,hum,zero){const tb=document.getElementById('corrBody');tb.innerHTML='';[10,20,30,40,50,60,70,80,90,100].forEach(d=>{const r=ball(d,fps,bb,hop,wMs,wDeg,temp,hum,zero);const me=toMil(r.drop,d),mw=toMil(r.drift,d);const tr=document.createElement('tr');tr.innerHTML=`<td class="d">${d}m</td><td class="dr">${Math.abs(r.drop).toFixed(1)}</td><td class="wc">${Math.abs(r.drift).toFixed(1)}</td><td>${me.toFixed(2)}</td><td>${toMoa(me).toFixed(1)}</td><td>${mw.toFixed(2)}</td><td>${toMoa(mw).toFixed(1)}</td><td>${r.e.toFixed(3)}</td>`;tb.appendChild(tr);});}
+
+/* ── PARSER ── */
+const PROXIES=[u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,u=>`https://thingproxy.freeboard.io/fetch/${encodeURIComponent(u)}`];
+async function tryPx(url,px){const r=await fetch(px(url),{signal:AbortSignal.timeout(9000)});if(!r.ok)return'';const ct=r.headers.get('content-type')||'';if(ct.includes('json')){const d=await r.json();return d.contents||d.body||d.data||'';}return await r.text();}
+async function parseUrl(){const url=document.getElementById('gunUrl').value.trim();if(!url)return;const st=document.getElementById('parseSt');st.style.display='block';st.className='st load';st.innerHTML='<span class="spin"></span>Načítavam...';document.getElementById('parsePreview').style.display='none';parsedGun=null;let html='';for(let i=0;i<PROXIES.length;i++){st.innerHTML=`<span class="spin"></span>Proxy ${i+1}/${PROXIES.length}...`;try{html=await tryPx(url,PROXIES[i]);if(html&&html.length>500)break;}catch{continue;}}if(!html||html.length<500){st.className='st err';st.innerHTML='✕ Stránku sa nepodarilo načítať.';return;}const text=html.replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');const found=extractP(text,url);parsedGun=found;const hasAny=found.fps||found.joule||found.bbWeight||found.barrelLength||found.type;if(!hasAny){st.className='st err';st.innerHTML='✕ Žiadne parametre sa nenašli.';return;}st.className='st ok';st.innerHTML='✔ Parametre načítané — potvrď a použij';const grid=document.getElementById('previewGrid');grid.innerHTML='';[{l:'Typ',v:found.type||'—'},{l:'FPS',v:found.fps?found.fps+' fps':'—'},{l:'Energia',v:found.joule?found.joule+' J':'—'},{l:'BB',v:found.bbWeight?found.bbWeight+' g':'—'},{l:'Hlaveň',v:found.barrelLength?found.barrelLength+' mm':'—'},{l:'Zdroj',v:found.keywords||'—'}].forEach(f=>{const d=document.createElement('div');d.style.cssText='background:var(--surf3);border:1px solid var(--bord);border-radius:4px;padding:9px 12px;';d.innerHTML=`<div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-bottom:3px;">${f.l}</div><div style="font-family:var(--ui);font-weight:700;font-size:15px;color:var(--acc);">${f.v}</div>`;grid.appendChild(d);});document.getElementById('parsePreview').style.display='block';}
+function extractP(text,url){const t=text,tl=text.toLowerCase(),r={fps:null,joule:null,bbWeight:null,barrelLength:null,type:null,keywords:''};const kw=[];const muzzle=t.match(/Muzzle Velocity\s*\[FPS\]\s*[:\s~]*(\d{3})/i)||t.match(/fps\]?\s*[:\s~]*(?:approx\.?\s*)?(\d{3})\s*(?:fps|with)/i);if(muzzle){const v=parseInt(muzzle[1]);if(v>=100&&v<=700){r.fps=v;kw.push('FPS');}}const energy=t.match(/Energy\s*[:\s]+(\d+[.,]\d+)\s*[Jj]/i)||t.match(/(\d+[.,]\d+)\s*[Jj]\b/);if(energy){const v=parseFloat(energy[1].replace(',','.'));if(v>0&&v<10){r.joule=v;kw.push('Joule');}}const barrel=t.match(/[Ll]en[gh]+t?\s*of\s*inner\s*barrel\s*\[mm\]\s*[:\s]+(\d{2,4})/i)||t.match(/barrel[:\s]+(\d{3,4})\s*mm/i)||t.match(/(\d{3,4})\s*mm[^0-9]*barrel/i);if(barrel){const v=parseInt(barrel[1]);if(v>=50&&v<=900){r.barrelLength=v;kw.push('Barrel');}}const ammo=t.match(/[Rr]ecommended\s*ammunition\s*weight\s*\[g\]\s*[:\s]+([\d.,]+)/i)||t.match(/0[.,][2-5]\d\s*g\b/);if(ammo){const raw=(ammo[1]||ammo[0]||'').match(/0[.,]\d+/);if(raw){const v=parseFloat(raw[0].replace(',','.'));if(v>=0.2&&v<=0.5){r.bbWeight=v;kw.push('BB');}}}if(!r.fps){const gf=tl.match(/(\d{3})\s*fps/)||tl.match(/fps\s*[:\s~]+(\d{3})/);if(gf){const v=parseInt(gf[1]);if(v>=100&&v<=700)r.fps=v;}}if(!r.joule){const gj=tl.match(/(\d+[.,]\d+)\s*j(?:oule)?s?\b/);if(gj){const v=parseFloat(gj[1].replace(',','.'));if(v>0&&v<10)r.joule=v;}}const urlL=url.toLowerCase();const typeP=[[/sniper|bolt.action|l96|vsr/i,'Sniper'],[/\bdmr\b|designated.marksman/i,'DMR'],[/\bhpa\b|high.pressure/i,'HPA'],[/\bgbb\b|gas.blowback/i,'GBB'],[/\baeg\b|electric|etu/i,'AEG']];for(const[rx,tp]of typeP){if(rx.test(urlL)||rx.test(tl)){r.type=tp;break;}}const tm=t.match(/Type\s*of\s*gun\s*[:\s]+([^\n·<]+)/i);if(tm){const tv=tm[1].toLowerCase();if(tv.includes('electric')||tv.includes('aeg'))r.type='AEG';else if(tv.includes('gas blowback'))r.type='GBB';}r.keywords=kw.join(', ')||'žiadne';return r;}
+function applyParsed(){if(!parsedGun)return;function sf(id,val,bid){if(val==null)return;const el=document.getElementById(id);el.value=val;el.classList.remove('hi');void el.offsetWidth;el.classList.add('hi');if(bid){const b=document.getElementById(bid);b.classList.add('vis');setTimeout(()=>b.classList.remove('vis'),4000);}}if(parsedGun.fps)sf('fps_',parsedGun.fps,'bdg_fps');if(parsedGun.joule)sf('joule_',parsedGun.joule.toFixed(3),'bdg_joule');if(parsedGun.bbWeight)sf('bbW',parsedGun.bbWeight.toFixed(2),'bdg_bb');if(parsedGun.barrelLength)sf('barrel',parsedGun.barrelLength,'bdg_barrel');if(parsedGun.type){const m={AEG:'aeg',HPA:'hpa',GBB:'gbb',DMR:'dmr',Sniper:'sniper'};document.getElementById('weaponType').value=m[parsedGun.type]||'aeg';const b=document.getElementById('bdg_type');b.classList.add('vis');setTimeout(()=>b.classList.remove('vis'),4000);}if(parsedGun.fps)fpsToJ();else if(parsedGun.joule)jToFps();else runCalc();showPage('calc',null);document.querySelectorAll('.bot-nav button')[0].classList.add('active');}
+
+/* ── DB ── */
+function saveGun(){const n=prompt('Názov:');if(!n)return;savedGuns.unshift({id:Date.now(),n,type:document.getElementById('weaponType').value.toUpperCase(),fps:document.getElementById('fps_').value,bb:parseFloat(document.getElementById('bbW').value).toFixed(2),barrel:document.getElementById('barrel').value,hop:document.getElementById('hop_').value,zero:document.getElementById('zero_').value,ts:new Date().toLocaleDateString()});localStorage.setItem('airsoftGuns',JSON.stringify(savedGuns));renderGuns();}
+function delGun(id){savedGuns=savedGuns.filter(g=>g.id!==id);localStorage.setItem('airsoftGuns',JSON.stringify(savedGuns));renderGuns();}
+function loadGun(id){const g=savedGuns.find(g=>g.id===id);if(!g)return;document.getElementById('weaponType').value=g.type.toLowerCase();document.getElementById('fps_').value=g.fps;document.getElementById('barrel').value=g.barrel;document.getElementById('hop_').value=g.hop;updateHop();document.getElementById('zero_').value=g.zero;document.getElementById('bbW').value=g.bb;fpsToJ();showPage('calc',null);document.querySelectorAll('.bot-nav button')[0].classList.add('active');}
+function renderGuns(){const l=document.getElementById('gunList');document.getElementById('dbCnt').textContent=savedGuns.length+' zbraní';if(!savedGuns.length){l.innerHTML='<div class="empty">Žiadne uložené zbrane</div>';return;}l.innerHTML=savedGuns.map(g=>`<div class="gun-card"><div><div class="gun-name">${g.n}</div><div class="gun-specs">${g.fps}fps · BB ${g.bb}g · ${g.barrel}mm · zero ${g.zero}m · ${g.ts}</div></div><div style="display:flex;align-items:center;gap:6px;"><span class="type-bdg">${g.type}</span><button class="btn sm" onclick="loadGun(${g.id})" style="padding:5px 10px;font-size:10px;">Načítať</button><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:4px 6px;" onclick="delGun(${g.id})"><i class="ti ti-trash"></i></button></div></div>`).join('');}
+
+/* ── INIT ── */
+fpsToJ();updateHop();runCalc();
+</script>
+</body>
+</html>
